@@ -1,0 +1,5 @@
+All transitions: {'B', 'A', 'C', 'E', 'D'}
+Direct succession: {('A', 'E'), ('E', 'D'), ('A', 'C'), ('B', 'D'), ('C', 'A'), ('A', 'B')}
+Causality: {('A', 'E'), ('E', 'D'), ('A', 'C'), ('B', 'D'), ('C', 'A'), ('A', 'B')}
+Parallel: set()
+Independent: {('B', 'C'), ('C', 'D'), ('A', 'D'), ('D', 'A'), ('D', 'C'), ('E', 'B'), ('B', 'E'), ('C', 'B'), ('E', 'C'), ('C', 'E')}
