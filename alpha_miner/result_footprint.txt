@@ -1,5 +1,5 @@
-All transitions: {'B', 'A', 'C', 'E', 'D'}
-Direct succession: {('A', 'E'), ('E', 'D'), ('A', 'C'), ('B', 'D'), ('C', 'A'), ('A', 'B')}
-Causality: {('A', 'E'), ('E', 'D'), ('A', 'C'), ('B', 'D'), ('C', 'A'), ('A', 'B')}
+All transitions: {'C', 'D', 'A', 'E', 'B'}
+Direct succession: {('A', 'E'), ('E', 'D'), ('A', 'B'), ('C', 'A'), ('B', 'E'), ('A', 'C')}
+Causality: {('A', 'E'), ('E', 'D'), ('A', 'B'), ('C', 'A'), ('B', 'E'), ('A', 'C')}
 Parallel: set()
-Independent: {('B', 'C'), ('C', 'D'), ('A', 'D'), ('D', 'A'), ('D', 'C'), ('E', 'B'), ('B', 'E'), ('C', 'B'), ('E', 'C'), ('C', 'E')}
+Independent: {('A', 'D'), ('E', 'C'), ('B', 'C'), ('C', 'D'), ('C', 'B'), ('D', 'B'), ('D', 'A'), ('B', 'D'), ('C', 'E'), ('D', 'C')}
