@@ -17,10 +17,8 @@ class AlphaPlusPlus:
         self.triangle = self.set_direct_succession()[2]
         self.parallel = self.set_parallel()
         self.independent = self.set_independent()
-        self.xw = self.set_xw(self.t_prim, self.l1l, self.direct_succession, self.triangle, self.parallel,
+        self.lw = self.set_lw(self.t_prim, self.l1l, self.direct_succession, self.triangle, self.parallel,
                               self.independent)
-        # KROK 5
-        self.lw = self.set_lw(self.xw)
         # KROK 6 i 7
         self.w_l1l = self.set_w_l1l()
         # KROK 8
@@ -39,21 +37,19 @@ class AlphaPlusPlus:
         self.pw_l1l = self.set_pw_l1l()
         self.tw_l1l = self.set_tw_l1l()
         # KROK 10 i 11
-        self.idw2 = self.eliminate_by_rule_1(self.set_idw2())
-        # KROK 12
-        self.w2_1 = self.set_w2_1(self.all_events, self.indirect_succession, self.all_places, self.succession,
+        self.w2_1 = self.set_w2_1(self.t_prim, self.indirect_succession, self.all_places, self.succession,
                                   self.parallel, self.xor_split)
-        self.w2_2 = self.set_w2_2(self.all_events, self.indirect_succession, self.all_places, self.succession,
+        self.w2_2 = self.set_w2_2(self.t_prim, self.indirect_succession, self.all_places, self.succession,
                                   self.parallel, self.xor_join)
         self.w2 = self.set_w2(self.w2_1, self.w2_2)
-        self.xw_12 = self.set_xw_12()
-        # KROK 13
+        self.idw2 = self.eliminate_by_rule_1(self.w2)
+        # KROK 12 i 13
         self.yw = self.set_yw()
         # KROK 14 i 15
-        self.idw3 = self.eliminate_by_rule_2(self.set_idw3())
-        # KROK 16
-        self.xw_16 = self.set_xw_16()
-        # KROK 17
+        self.w3 = self.set_w3(self.t_prim, self.indirect_succession, self.all_places, self.succession,
+                              self.parallel)
+        self.idw3 = self.eliminate_by_rule_2(self.w3)
+        # KROK 16 i 17
         self.zw = self.set_zw()
         # KROK 18
         self.pw = self.set_pw()
@@ -61,8 +57,10 @@ class AlphaPlusPlus:
         self.tw = self.set_tw()
         self.start_events = self.set_start_events()
         self.end_events = self.set_end_events()
-        # self.w3 = self.set_w3(self.all_events, self.indirect_succession, self.all_places, self.succession,
-        #                       self.parallel)
+
+        # PETRI NET INPUTS
+        self.pw_to_pn = self.set_pw_to_yl()
+        self.pw_l1l_to_pn = self.set_pw_l1l_to_pn()
 
     # FOOTPRINT MATRIX
     def set_footprint(self):
@@ -191,9 +189,12 @@ class AlphaPlusPlus:
         for pair in all_permutations:
             if pair not in self.direct_succession and pair[::-1] not in self.direct_succession:
                 ind.add(pair)
+        for event in self.all_events:
+            if (event, event) not in ind:
+                ind.add((event, event))
         return ind
 
-    def set_xw(self, t_prim, l1l, direct_succession, triangle, parallel, independent):
+    def set_lw(self, t_prim, l1l, direct_succession, triangle, parallel, independent):
         xw = set()
         a_set = []
         b_set = []
@@ -220,26 +221,6 @@ class AlphaPlusPlus:
                             if a in a_set and b in b_set:
                                 xw.add((a, b, c))
         return xw
-
-    # krok 5
-    def set_lw(self, xw):
-        a_prim = []
-        b_prim = []
-        c_prim = []
-        lw = set()
-        for triplet in xw:
-            if triplet[0] not in a_prim:
-                a_prim.append(triplet[0])
-            if triplet[1] not in b_prim:
-                b_prim.append(triplet[1])
-            if triplet[2] not in c_prim:
-                c_prim.append(triplet[2])
-        for a in a_prim:
-            for b in b_prim:
-                for c in c_prim:
-                    if (a, b, c) in xw:
-                        lw.add((a, b, c))
-        return lw
 
     # krok 6 i 7
     def set_w_l1l(self):
@@ -352,76 +333,61 @@ class AlphaPlusPlus:
     def set_pw_l1l(self):
         return self.set_places(Alpha(self.w_l1l).yl)
 
+    def set_pw_l1l_to_pn(self):
+        pw_to_yl = set()
+        for place in self.pw_l1l:
+            pw_to_yl.add((str(place.ins), str(place.outs)))
+        return pw_to_yl
+
+
     def set_tw_l1l(self):
         return Alpha(self.w_l1l).all_events
 
-    # krok 10 i 11
-    def set_idw2(self):
-        idw2 = set()
-        as_causal = self.idw1.union(self.causal)
-        as_indirect_succession = self.set_indirect_succession(self.t_prim, self.direct_succession, self.xor_join,
-                                                              self.xor_split)
-        as_succession = self.set_succession(as_causal, as_indirect_succession)
-        as_w2_1 = self.set_w2_1(self.t_prim, as_indirect_succession, self.all_places, as_succession, self.parallel,
-                                self.xor_split)
-        as_w2_2 = self.set_w2_1(self.t_prim, as_indirect_succession, self.all_places, as_succession, self.parallel,
-                                self.xor_join)
-        as_w2 = self.set_w2(as_w2_1, as_w2_2)
-        for a in self.t_prim:
-            for b in self.t_prim:
-                if (a, b) in as_w2:
-                    idw2.add((a, b))
-        return idw2
-
-    def eliminate_by_rule_1(self, idw2):
-        new_idw2 = idw2
+    def eliminate_by_rule_1(self, w2):
+        new_w2 = w2
         for a in self.all_events:
             for b in self.all_events:
                 for c in self.all_events:
-                    if (a, b) in new_idw2 and (a, c) in new_idw2 and (b, c) in self.succession:
-                        new_idw2.remove((a, c))
-        return new_idw2
+                    if (a, b) in new_w2 and (a, c) in new_w2 and (b, c) in self.succession:
+                        new_w2.remove((a, c))
+        return new_w2
 
     # krok 12
     @staticmethod
-    def set_w2_1(all_events, indirect_succession, all_places, succession, parallel, xor_split):
+    def set_w2_1(events, indirect_succession, all_places, succession, parallel, xor_split):
         w2_1 = set()
-        all_permutations = itertools.permutations(all_events, 2)
-        for pair in all_permutations:
-            if pair in indirect_succession:
-                a_places = []
-                for place in all_places:
-                    if pair[0] in place.ins:
-                        a_places.append(place)
-                if len(a_places) > 1:
-                    for event in all_events:
-                        if (pair[1], event) in xor_split:
-                            for place in a_places:
-                                for t in place.outs:
+        for pair in indirect_succession:
+            a_outs = []
+            for place in all_places:
+                if pair[0] in place.ins:
+                    a_outs.append(place)
+            if len(a_outs) > 0:
+                for b_prim in events:
+                    if (pair[1], b_prim) in xor_split:
+                        for place in a_outs:
+                            for t in place.outs:
+                                if not ((t, pair[1]) in succession or (t, pair[1]) in parallel):
                                     for t_prim in place.outs:
-                                        if not ((t, pair[1]) in succession or (t, pair[1]) in parallel) and\
-                                                ((t_prim, event) in succession or (t_prim, event) in parallel):
+                                        if (t_prim, b_prim) in succession or (t_prim, b_prim) in parallel:
                                             w2_1.add(pair)
         return w2_1
 
     @staticmethod
-    def set_w2_2(all_events, indirect_succession, all_places, succession, parallel, xor_join):
+    def set_w2_2(events, indirect_succession, all_places, succession, parallel, xor_join):
         w2_2 = set()
-        all_permutations = itertools.permutations(all_events, 2)
-        for pair in all_permutations:
-            if pair in indirect_succession:
-                b_places = []
-                for place in all_places:
-                    if pair[1] in place.outs:
-                        b_places.append(place)
-                if len(b_places) > 1:
-                    for event in all_events:
-                        if (pair[0], event) in xor_join:
-                            for place in b_places:
-                                for t in place.ins:
+        for pair in indirect_succession:
+            b_ins = []
+            for place in all_places:
+                if pair[1] in place.outs:
+                    b_ins.append(place)
+            if len(b_ins) > 0:
+                for a_prim in events:
+                    if (pair[0], a_prim) in xor_join:
+                        for place in b_ins:
+                            for t in place.ins:
+                                if not ((pair[0], t) in succession or (pair[0], t) in parallel):
                                     for t_prim in place.ins:
-                                        if not ((pair[0], t) in succession or (pair[0], t) in parallel) and\
-                                                ((event, t_prim) in succession or (event, t_prim) in parallel):
+                                        if (a_prim, t_prim) in succession or (a_prim, t_prim) in parallel:
                                             w2_2.add(pair)
         return w2_2
 
@@ -430,151 +396,71 @@ class AlphaPlusPlus:
         w2 = w2_1.union(w2_2)
         return w2
 
-    def set_xw_12(self):
-        pw_l1l = self.pw_l1l
-        As = []
-        Bs = []
-        xw_12 = set()
-        for place in pw_l1l:
-            As.append(place.ins)
-            Bs.append(place.outs)
-        for A, A2 in zip(As,As[1:]):
-            for B, B2 in zip(Bs, Bs[1:]):
-                if len(list(set(A2).union(B2))) > 0 and len(list(set(A).intersection(A2))) == 0 and\
-                        len(list(set(B).intersection(B2))) == 0:
-                    for a in A:
-                        for a2 in A2:
-                            for b in B:
-                                for b2 in B2:
-                                    for b_b2 in list(set(B).union(B2)):
-                                        if ((a, b2) in self.w1 or (a, b2) in self.w2) and\
-                                                ((a, b_b2) in self.w1 or (a, b_b2) in self.w2) and\
-                                                (a2, a) in self.independent and\
-                                                (a2, a) not in self.indirect_succession and\
-                                                (b, b2) in self.independent and (b, b2) not in self.indirect_succession:
-                                            ins = list(set(A).union(A2))
-                                            outs = list(set(B).union(B2))
-                                            xw_12.add(Place(ins, outs))
-        return xw_12
-
-    # krok 13
     def set_yw(self):
-        xw = self.xw_12
-        pw_l1l = self.pw_l1l
         yw = set()
-        a_prim = []
-        b_prim = []
-        for place in xw:
-            if place.ins not in a_prim:
-                a_prim.append(place.ins)
-            if place.outs not in b_prim:
-                b_prim.append(place.outs)
-        for place in pw_l1l:
-            if place.ins not in a_prim:
-                a_prim.append(place.ins)
-            if place.outs not in b_prim:
-                b_prim.append(place.outs)
-        for a in a_prim:
-            for b in b_prim:
-                new_place = Place(a, b)
-                if new_place in xw or new_place in pw_l1l:
-                    yw.add(new_place)
+        for place_1, place_2 in zip(self.pw_l1l, self.pw_l1l[1:]):
+            if len(list(set(place_1.ins).intersection(place_2.ins))) == 0 and\
+                   len(list(set(place_1.outs).intersection(place_2.outs))) == 0 and\
+                       len(list(set(place_2.ins).union(set(place_2.outs)))) > 0:
+                for a in place_1.ins:
+                    for a2 in place_2.ins:
+                        for b in place_1.outs:
+                            for b2 in place_2.outs:
+                                for b_b2 in list(set(place_1.outs).union(set(place_2.outs))):
+                                    if ((a, b2) in self.idw1 or (a, b2) in self.idw2) and ((a2, b_b2) in self.idw1 or (a2, b_b2) in self.idw2) and (a, a2) in self.independent and (a, a2) not in self.indirect_succession and (b, b2) not in self.indirect_succession and (b, b2) in self.independent:
+                                        yw.add(Place(list(set(place_1.ins).union(place_2.ins)), list(set(place_1.outs).union(place_2.outs))))
         return yw
 
-    # krok 14 i 15
-    def set_idw3(self):
-        idw3 = set()
-        as_causal = self.idw2.union(self.causal)
-        as_indirect_succession = self.set_indirect_succession(self.t_prim, self.direct_succession, self.xor_join,
-                                                              self.xor_split)
-        as_succession = self.set_succession(as_causal, as_indirect_succession)
-        as_w3 = self.set_w3(self.t_prim, as_indirect_succession, self.pw_l1l, as_succession, self.parallel)
-        for a in self.t_prim:
-            for b in self.t_prim:
-                if (a, b) in as_w3:
-                    idw3.add((a, b))
-        return idw3
-
-    def eliminate_by_rule_2(self, idw3):
-        new_idw3 = idw3
+    def eliminate_by_rule_2(self, w3):
+        new_w3 = w3
         for a in self.all_events:
             for b in self.all_events:
                 for trace in self.all_events:
                     for x, y, in zip(trace, trace[1:]):
-                        if (a, b) in new_idw3 and (a, x) in new_idw3 and (x, y) in new_idw3 and (y, b) in new_idw3:
-                            new_idw3.remowe((a, b))
-        return new_idw3
+                        if (a, b) in new_w3 and (a, x) in new_w3 and (x, y) in new_w3 and (y, b) in new_w3:
+                            new_w3.remowe((a, b))
+        return new_w3
 
-    def set_w3(self, all_events, indirect_succession, all_places, succession, parallel):
+    def set_w3(self, t_prim, indirect_succession, all_places, succession, parallel):
         w3 = set()
-        all_permutations = itertools.permutations(all_events, 2)
-        for pair in all_permutations:
-            for a_prim in all_events:
-                for b_prim in all_events:
-                    if pair in indirect_succession and (a_prim, b_prim) in indirect_succession and\
-                            (pair[0], b_prim) not in indirect_succession and\
-                            (a_prim, pair[1]) not in indirect_succession:
-                        a_out_places = []
-                        b_in_places = []
-                        a_prim_out_places = []
-                        b_prim_in_places = []
+        for pair in indirect_succession:
+            for a_prim in t_prim:
+                for b_prim in t_prim:
+                    for t in t_prim:
+                        a_outs = []
+                        b_ins = []
+                        b_prim_ins = []
+                        a_prim_outs = []
+                        t_ins = []
                         for place in all_places:
                             if pair[0] in place.ins:
-                                a_out_places.append(place)
+                                a_outs.append(place)
                             if pair[1] in place.outs:
-                                b_in_places.append(place)
+                                b_ins.append(place)
                             if a_prim in place.ins:
-                                a_prim_out_places.append(place)
+                                a_prim_outs.append(place)
                             if b_prim in place.outs:
-                                b_prim_in_places.append(place)
-                        a_common_part = list(set(a_out_places).intersection(a_prim_out_places))
-                        b_common_part = list(set(b_in_places).intersection(b_prim_in_places))
-                        if len(a_common_part) > 0 and len(b_common_part) > 0 and\
-                                set(b_in_places).issubset(set(b_prim_in_places)):
-                            for t in all_events:
-                                if (pair[0], t) not in indirect_succession and (a_prim, t) in indirect_succession and\
-                                        ((b_prim, t) in parallel or (b_prim, t) in succession):
-                                    t_in_places = []
-                                    for t_place in all_places:
-                                        if t in t_place.outs:
-                                            t_in_places.append(t_place)
-                                    b_t_common_part = list(set(b_in_places).intersection(t_in_places))
-                                    if len(b_t_common_part) > 0:
-                                        w3.add(pair)
+                                b_prim_ins.append(place)
+                            if t in place.outs and (pair[0], t) not in indirect_succession and (a_prim, t) in indirect_succession and ((b_prim, t) in parallel or (b_prim, t) in succession) and len(list(set(b_ins).intersection(set(t_ins)))) > 0:
+                                t_ins.append(place)
+                        if len(list(set(a_outs).intersection(set(a_prim_outs)))) > 0 and len(list(set(b_ins).intersection(set(b_prim_ins)))) > 0 and (pair[0], b_prim) not in indirect_succession and (a_prim, pair[1]) not in indirect_succession and (a_prim, b_prim) in indirect_succession and len(list(set(b_ins).intersection(set(b_prim_ins).union(set(t_ins))))) > 0:
+                            w3.add(pair)
         return w3
 
     # krok 16
-    def set_xw_16(self):
-        xw_16 = set()
+    def set_zw(self):
+        zw = set()
         for a in self.t_prim:
             for b in self.t_prim:
                 if (a, b) in self.idw3:
                     ins = [a]
                     outs = [b]
                     for event in self.t_prim:
-                        if (a, event) in self.independent and (event, b) in self.idw3:
+                        if (a, event) in self.independent and (event, b) in self.idw3 and event not in ins:
                             ins.append(event)
-                        if (b, event) in self.independent and (a, event) in self.idw3:
+                        if (b, event) in self.independent and (a, event) in self.idw3 and event not in outs:
                             outs.append(event)
-                    xw_16.add(Place(ins, outs))
-        return xw_16
-
-    # krok 17
-    def set_zw(self):
-        xw = self.xw_16
-        zw = set()
-        a_prim = []
-        b_prim = []
-        for place in xw:
-            if place.ins not in a_prim:
-                a_prim.append(place.ins)
-            if place.outs not in b_prim:
-                b_prim.append(place.outs)
-        for a in a_prim:
-            for b in b_prim:
-                new_place = Place(a, b)
-                if new_place in xw:
-                    zw.add(new_place)
+                    zw.add(Place(ins, outs))
         return zw
 
     # krok 18
@@ -590,6 +476,12 @@ class AlphaPlusPlus:
             new_place = Place(ins, outs)
             pw.add(new_place)
         return pw
+
+    def set_pw_to_yl(self):
+        pw_to_yl = set()
+        for place in self.pw:
+            pw_to_yl.add((str(place.ins), str(place.outs)))
+            return pw_to_yl
 
     # krok 19
     def set_tw(self):

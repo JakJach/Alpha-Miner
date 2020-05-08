@@ -45,15 +45,16 @@ class PetriNet():
 
     def __isolated_transitions(self, alpha_model):
         tl = alpha_model.all_events
-        yl = alpha_model.yl
+        yl = alpha_model.pw_to_pn
         ti = alpha_model.start_events
         to = alpha_model.end_events
 
         yl_transitions = set()
-        for pair in yl:
-            # yl is like: {(('a',), ('b',)), (('b',), ('d',))}
-            for p in pair:
-                yl_transitions.add(p[0])
+        if yl:
+            for pair in yl:
+                # yl is like: {(('a',), ('b',)), (('b',), ('d',))}
+                for p in pair:
+                    yl_transitions.add(p[0])
 
         appeared = ti | to | yl_transitions  # "|" for set union
         iso = tl - appeared
